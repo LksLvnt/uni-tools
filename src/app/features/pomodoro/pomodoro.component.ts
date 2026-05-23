@@ -9,33 +9,33 @@ type TimerState = 'idle' | 'running' | 'paused' | 'break';
   imports: [FormsModule],
   template: `
     <div class="max-w-lg mx-auto">
-      <h2 class="text-2xl font-bold mb-6">Pomodoro Timer</h2>
+      <h2 class="font-['Playfair_Display'] text-2xl font-bold mb-6">Pomodoro</h2>
 
-      <div class="bg-white rounded-xl border border-slate-200 p-8 flex flex-col items-center gap-6">
+      <div class="bg-surface-raised rounded-xl border border-border p-8 flex flex-col items-center gap-6">
         <div class="flex gap-2">
           @for (preset of presets; track preset.label) {
             <button
               (click)="setDuration(preset.minutes)"
               [disabled]="state() === 'running'"
-              [class]="'px-3 py-1 rounded-lg text-sm transition ' + (duration() === preset.minutes && state() === 'idle' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')"
+              [class]="'px-3 py-1.5 rounded-lg text-sm transition border ' + (duration() === preset.minutes && state() === 'idle' ? 'bg-accent text-surface border-accent' : 'bg-surface text-text-muted border-border hover:border-accent/40 disabled:opacity-50')"
             >{{ preset.label }}</button>
           }
         </div>
 
         <div class="relative w-56 h-56 flex items-center justify-center">
           <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 200 200">
-            <circle cx="100" cy="100" r="90" fill="none" stroke="#e2e8f0" stroke-width="8" />
+            <circle cx="100" cy="100" r="90" fill="none" stroke="#2a2a2a" stroke-width="6" />
             <circle cx="100" cy="100" r="90" fill="none"
-              [attr.stroke]="state() === 'break' ? '#22c55e' : '#6366f1'"
-              stroke-width="8"
+              [attr.stroke]="state() === 'break' ? '#4ade80' : '#e8a87c'"
+              stroke-width="6"
               stroke-linecap="round"
               [attr.stroke-dasharray]="circumference"
               [attr.stroke-dashoffset]="dashOffset()"
             />
           </svg>
           <div class="text-center z-10">
-            <div class="text-5xl font-mono font-bold tracking-tight">{{ displayTime() }}</div>
-            <div class="text-sm text-slate-400 mt-1">
+            <div class="text-5xl font-mono font-bold tracking-tight text-text">{{ displayTime() }}</div>
+            <div class="text-sm text-text-muted mt-1">
               {{ state() === 'break' ? 'Break' : state() === 'idle' ? 'Ready' : state() === 'paused' ? 'Paused' : 'Focus' }}
             </div>
           </div>
@@ -45,31 +45,31 @@ type TimerState = 'idle' | 'running' | 'paused' | 'break';
           [(ngModel)]="label"
           placeholder="What are you working on?"
           [disabled]="state() === 'running'"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-center"
+          class="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text text-center placeholder:text-text-muted focus:outline-none focus:border-accent transition"
         />
 
         <div class="flex gap-3">
           @if (state() === 'idle' || state() === 'break') {
             <button (click)="start()"
-              class="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition">
+              class="px-6 py-2 bg-accent text-surface rounded-lg font-semibold hover:bg-accent-hover transition">
               Start
             </button>
           }
           @if (state() === 'running') {
             <button (click)="pause()"
-              class="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition">
+              class="px-6 py-2 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-lg hover:bg-yellow-500/30 transition">
               Pause
             </button>
           }
           @if (state() === 'paused') {
             <button (click)="resume()"
-              class="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition">
+              class="px-6 py-2 bg-accent text-surface rounded-lg font-semibold hover:bg-accent-hover transition">
               Resume
             </button>
           }
           @if (state() !== 'idle') {
             <button (click)="reset()"
-              class="px-6 py-2 bg-slate-400 text-white rounded-lg hover:bg-slate-500 transition">
+              class="px-6 py-2 bg-surface border border-border text-text-muted rounded-lg hover:text-text hover:border-accent/40 transition">
               Reset
             </button>
           }
@@ -78,15 +78,15 @@ type TimerState = 'idle' | 'running' | 'paused' | 'break';
 
       @if (todaySessions().length > 0) {
         <div class="mt-6">
-          <h3 class="text-lg font-semibold mb-3">Today's sessions</h3>
+          <h3 class="font-['Playfair_Display'] text-lg font-semibold mb-3">Today's sessions</h3>
           <div class="flex flex-col gap-2">
             @for (session of todaySessions(); track session.id) {
-              <div class="bg-white rounded-lg border border-slate-200 px-4 py-3 flex items-center justify-between">
+              <div class="bg-surface-raised rounded-lg border border-border px-4 py-3 flex items-center justify-between">
                 <div>
                   <span class="text-sm font-medium">{{ session.label || 'Focus session' }}</span>
-                  <span class="text-xs text-slate-400 ml-2">{{ formatTime(session.completed_at!) }}</span>
+                  <span class="text-xs text-text-muted ml-2">{{ formatTime(session.completed_at!) }}</span>
                 </div>
-                <span class="text-sm text-indigo-500 font-mono">{{ session.duration_minutes }}min</span>
+                <span class="text-sm text-accent font-mono">{{ session.duration_minutes }}min</span>
               </div>
             }
           </div>
@@ -94,12 +94,12 @@ type TimerState = 'idle' | 'running' | 'paused' | 'break';
       }
 
       <div class="mt-6 grid grid-cols-2 gap-4">
-        <div class="bg-white rounded-xl border border-slate-200 p-4">
-          <div class="text-sm text-slate-500">Today</div>
+        <div class="bg-surface-raised rounded-xl border border-border p-4">
+          <div class="text-sm text-text-muted">Today</div>
           <div class="text-2xl font-bold mt-1">{{ todayMinutes() }} min</div>
         </div>
-        <div class="bg-white rounded-xl border border-slate-200 p-4">
-          <div class="text-sm text-slate-500">Sessions today</div>
+        <div class="bg-surface-raised rounded-xl border border-border p-4">
+          <div class="text-sm text-text-muted">Sessions today</div>
           <div class="text-2xl font-bold mt-1">{{ todaySessions().length }}</div>
         </div>
       </div>

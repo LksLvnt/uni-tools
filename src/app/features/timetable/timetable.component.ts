@@ -10,14 +10,13 @@ const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
   imports: [FormsModule],
   template: `
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold">Timetable</h2>
+      <h2 class="font-['Playfair_Display'] text-2xl font-bold">Timetable</h2>
       <div class="flex gap-2">
-        <button
-          (click)="openForm()"
-          class="px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm hover:bg-indigo-600 transition">
+        <button (click)="openForm()"
+          class="px-4 py-2 bg-accent text-surface rounded-lg text-sm font-semibold hover:bg-accent-hover transition">
           + Add class
         </button>
-        <label class="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm cursor-pointer hover:bg-slate-600 transition">
+        <label class="px-4 py-2 bg-surface-raised border border-border text-text-muted rounded-lg text-sm cursor-pointer hover:text-text hover:border-accent/40 transition">
           Import .ics
           <input type="file" accept=".ics" (change)="onFileImport($event)" hidden />
         </label>
@@ -25,47 +24,47 @@ const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
     </div>
 
     @if (showForm()) {
-      <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" (click)="closeForm()">
-        <div class="bg-white rounded-xl p-6 w-[400px] flex flex-col gap-3 shadow-xl" (click)="$event.stopPropagation()">
-          <h3 class="text-lg font-semibold">{{ editing() ? 'Edit' : 'Add' }} class</h3>
+      <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" (click)="closeForm()">
+        <div class="bg-surface-raised border border-border rounded-xl p-6 w-[400px] flex flex-col gap-3 shadow-2xl" (click)="$event.stopPropagation()">
+          <h3 class="font-['Playfair_Display'] text-lg font-semibold">{{ editing() ? 'Edit' : 'Add' }} class</h3>
           <input [(ngModel)]="form.subject_name" placeholder="Subject name"
-            class="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+            class="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition" />
           <input [(ngModel)]="form.neptun_code" placeholder="Neptun code (optional)"
-            class="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+            class="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition" />
           <select [(ngModel)]="form.day_of_week"
-            class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            class="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition">
             @for (day of days; track day; let i = $index) {
               <option [value]="i + 1">{{ day }}</option>
             }
           </select>
           <div class="flex items-center gap-2">
             <input type="time" [(ngModel)]="form.start_time"
-              class="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-1" />
-            <span class="text-sm text-gray-500">to</span>
+              class="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text flex-1 focus:outline-none focus:border-accent transition" />
+            <span class="text-sm text-text-muted">to</span>
             <input type="time" [(ngModel)]="form.end_time"
-              class="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-1" />
+              class="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text flex-1 focus:outline-none focus:border-accent transition" />
           </div>
           <input [(ngModel)]="form.room" placeholder="Room (optional)"
-            class="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+            class="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition" />
           <input [(ngModel)]="form.instructor" placeholder="Instructor (optional)"
-            class="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+            class="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition" />
           <div class="flex items-center gap-2">
-            <label class="text-sm">Color</label>
-            <input type="color" [(ngModel)]="form.color" class="w-10 h-8 cursor-pointer" />
+            <label class="text-sm text-text-muted">Color</label>
+            <input type="color" [(ngModel)]="form.color" class="w-10 h-8 cursor-pointer bg-transparent border-0" />
           </div>
           <div class="flex justify-end gap-2 mt-2">
             @if (editing()) {
               <button (click)="deleteEntry()"
-                class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition">
+                class="px-4 py-2 bg-danger text-white rounded-lg text-sm hover:opacity-80 transition">
                 Delete
               </button>
             }
             <button (click)="closeForm()"
-              class="px-4 py-2 bg-gray-400 text-white rounded-lg text-sm hover:bg-gray-500 transition">
+              class="px-4 py-2 bg-surface border border-border text-text-muted rounded-lg text-sm hover:text-text transition">
               Cancel
             </button>
             <button (click)="saveEntry()"
-              class="px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm hover:bg-indigo-600 transition">
+              class="px-4 py-2 bg-accent text-surface rounded-lg text-sm font-semibold hover:bg-accent-hover transition">
               {{ editing() ? 'Save' : 'Add' }}
             </button>
           </div>
@@ -73,27 +72,27 @@ const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
       </div>
     }
 
-    <div class="flex border border-slate-200 rounded-lg overflow-hidden bg-white">
+    <div class="flex border border-border rounded-xl overflow-hidden bg-surface-raised">
       <div class="w-16 shrink-0">
-        <div class="h-10 border-b border-slate-200"></div>
+        <div class="h-10 border-b border-border"></div>
         @for (hour of hours; track hour) {
-          <div class="h-[60px] flex items-start justify-center text-xs text-slate-400 pt-0.5 border-b border-slate-50">
+          <div class="h-[60px] flex items-start justify-center text-xs text-text-muted pt-0.5 border-b border-border/50">
             {{ hour }}:00
           </div>
         }
       </div>
       @for (day of days; track day; let d = $index) {
-        <div class="flex-1 min-w-0 border-l border-slate-200">
-          <div class="h-10 flex items-center justify-center font-semibold text-sm border-b border-slate-200 bg-slate-50">
+        <div class="flex-1 min-w-0 border-l border-border">
+          <div class="h-10 flex items-center justify-center font-semibold text-sm border-b border-border text-text-muted bg-surface">
             {{ day }}
           </div>
           <div class="relative" [style.height.px]="14 * 60">
             @for (hour of hours; track hour) {
-              <div class="h-[60px] border-b border-slate-50"></div>
+              <div class="h-[60px] border-b border-border/30"></div>
             }
             @for (entry of entriesForDay(d + 1); track entry.id) {
               <div
-                class="absolute left-0.5 right-0.5 rounded px-1.5 py-1 text-white text-xs cursor-pointer flex flex-col gap-px overflow-hidden hover:opacity-85 transition-opacity"
+                class="absolute left-0.5 right-0.5 rounded-md px-1.5 py-1 text-white text-xs cursor-pointer flex flex-col gap-px overflow-hidden hover:opacity-85 transition-opacity shadow-lg"
                 [style.top.px]="entryTop(entry)"
                 [style.height.px]="entryHeight(entry)"
                 [style.background]="entry.color"

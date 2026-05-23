@@ -7,25 +7,24 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
   imports: [FormsModule],
   template: `
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold">Grades</h2>
-      <button
-        (click)="openForm()"
-        class="px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm hover:bg-indigo-600 transition">
+      <h2 class="font-['Playfair_Display'] text-2xl font-bold">Grades</h2>
+      <button (click)="openForm()"
+        class="px-4 py-2 bg-accent text-surface rounded-lg text-sm font-semibold hover:bg-accent-hover transition">
         + Add subject
       </button>
     </div>
 
     <div class="grid grid-cols-3 gap-4 mb-6">
-      <div class="bg-white rounded-xl p-4 border border-slate-200">
-        <div class="text-sm text-slate-500">Weighted Average</div>
-        <div class="text-3xl font-bold mt-1">{{ weightedAvg() }}</div>
+      <div class="bg-surface-raised rounded-xl p-4 border border-border">
+        <div class="text-sm text-text-muted">Weighted Average</div>
+        <div class="text-3xl font-bold mt-1 text-accent">{{ weightedAvg() }}</div>
       </div>
-      <div class="bg-white rounded-xl p-4 border border-slate-200">
-        <div class="text-sm text-slate-500">Total Credits</div>
+      <div class="bg-surface-raised rounded-xl p-4 border border-border">
+        <div class="text-sm text-text-muted">Total Credits</div>
         <div class="text-3xl font-bold mt-1">{{ totalCredits() }}</div>
       </div>
-      <div class="bg-white rounded-xl p-4 border border-slate-200">
-        <div class="text-sm text-slate-500">Subjects</div>
+      <div class="bg-surface-raised rounded-xl p-4 border border-border">
+        <div class="text-sm text-text-muted">Subjects</div>
         <div class="text-3xl font-bold mt-1">{{ service.entries().length }}</div>
       </div>
     </div>
@@ -34,23 +33,23 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
       <div class="flex gap-2 mb-4">
         <button
           (click)="selectedSemester.set(null)"
-          [class]="'px-3 py-1 rounded-lg text-sm transition ' + (selectedSemester() === null ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300')">
+          [class]="'px-3 py-1.5 rounded-lg text-sm transition border ' + (selectedSemester() === null ? 'bg-accent text-surface border-accent' : 'bg-surface-raised text-text-muted border-border hover:border-accent/40')">
           All
         </button>
         @for (sem of semesters(); track sem) {
           <button
             (click)="selectedSemester.set(sem)"
-            [class]="'px-3 py-1 rounded-lg text-sm transition ' + (selectedSemester() === sem ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300')">
+            [class]="'px-3 py-1.5 rounded-lg text-sm transition border ' + (selectedSemester() === sem ? 'bg-accent text-surface border-accent' : 'bg-surface-raised text-text-muted border-border hover:border-accent/40')">
             {{ sem }}
           </button>
         }
       </div>
     }
 
-    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div class="bg-surface-raised rounded-xl border border-border overflow-hidden">
       <table class="w-full text-sm">
-        <thead class="bg-slate-50 border-b border-slate-200">
-          <tr>
+        <thead class="border-b border-border">
+          <tr class="text-text-muted">
             <th class="text-left px-4 py-3 font-semibold">Subject</th>
             <th class="text-left px-4 py-3 font-semibold">Semester</th>
             <th class="text-center px-4 py-3 font-semibold">Credit</th>
@@ -61,21 +60,21 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
         <tbody>
           @for (entry of filteredEntries(); track entry.id) {
             <tr
-              class="border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition"
+              class="border-b border-border/50 hover:bg-surface-hover cursor-pointer transition"
               (click)="editEntry(entry)">
               <td class="px-4 py-3">{{ entry.subject_name }}</td>
-              <td class="px-4 py-3 text-slate-500">{{ entry.semester || '—' }}</td>
+              <td class="px-4 py-3 text-text-muted">{{ entry.semester || '—' }}</td>
               <td class="px-4 py-3 text-center">{{ entry.credit }}</td>
               <td class="px-4 py-3 text-center">
-                <span [class]="'inline-flex items-center justify-center w-8 h-8 rounded-full text-white font-bold ' + gradeColor(entry.grade)">
+                <span [class]="'inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ' + gradeColor(entry.grade)">
                   {{ entry.grade }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-right font-mono">{{ entry.credit * entry.grade }}</td>
+              <td class="px-4 py-3 text-right font-mono text-text-muted">{{ entry.credit * entry.grade }}</td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="px-4 py-8 text-center text-slate-400">No subjects added yet.</td>
+              <td colspan="5" class="px-4 py-8 text-center text-text-muted">No subjects added yet.</td>
             </tr>
           }
         </tbody>
@@ -83,23 +82,23 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
     </div>
 
     @if (showForm()) {
-      <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" (click)="closeForm()">
-        <div class="bg-white rounded-xl p-6 w-[400px] flex flex-col gap-3 shadow-xl" (click)="$event.stopPropagation()">
-          <h3 class="text-lg font-semibold">{{ editing() ? 'Edit' : 'Add' }} subject</h3>
+      <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" (click)="closeForm()">
+        <div class="bg-surface-raised border border-border rounded-xl p-6 w-[400px] flex flex-col gap-3 shadow-2xl" (click)="$event.stopPropagation()">
+          <h3 class="font-['Playfair_Display'] text-lg font-semibold">{{ editing() ? 'Edit' : 'Add' }} subject</h3>
           <input [(ngModel)]="form.subject_name" placeholder="Subject name"
-            class="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+            class="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition" />
           <input [(ngModel)]="form.semester" placeholder="Semester (e.g. 2024/25/2)"
-            class="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+            class="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition" />
           <div class="flex gap-3">
             <div class="flex-1">
-              <label class="text-xs text-slate-500 mb-1 block">Credits</label>
+              <label class="text-xs text-text-muted mb-1 block">Credits</label>
               <input type="number" [(ngModel)]="form.credit" min="1" max="30"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                class="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition" />
             </div>
             <div class="flex-1">
-              <label class="text-xs text-slate-500 mb-1 block">Grade (1–5)</label>
+              <label class="text-xs text-text-muted mb-1 block">Grade (1–5)</label>
               <select [(ngModel)]="form.grade"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                class="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition">
                 <option [value]="5">5 — Excellent</option>
                 <option [value]="4">4 — Good</option>
                 <option [value]="3">3 — Satisfactory</option>
@@ -111,16 +110,16 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
           <div class="flex justify-end gap-2 mt-2">
             @if (editing()) {
               <button (click)="deleteEntry()"
-                class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition">
+                class="px-4 py-2 bg-danger text-white rounded-lg text-sm hover:opacity-80 transition">
                 Delete
               </button>
             }
             <button (click)="closeForm()"
-              class="px-4 py-2 bg-gray-400 text-white rounded-lg text-sm hover:bg-gray-500 transition">
+              class="px-4 py-2 bg-surface border border-border text-text-muted rounded-lg text-sm hover:text-text transition">
               Cancel
             </button>
             <button (click)="saveEntry()"
-              class="px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm hover:bg-indigo-600 transition">
+              class="px-4 py-2 bg-accent text-surface rounded-lg text-sm font-semibold hover:bg-accent-hover transition">
               {{ editing() ? 'Save' : 'Add' }}
             </button>
           </div>
@@ -168,13 +167,13 @@ export default class Grades implements OnInit {
 
   gradeColor(grade: number): string {
     const colors: Record<number, string> = {
-      5: 'bg-green-500',
-      4: 'bg-blue-500',
-      3: 'bg-yellow-500',
-      2: 'bg-orange-500',
-      1: 'bg-red-500',
+      5: 'bg-green-500/20 text-green-400',
+      4: 'bg-blue-500/20 text-blue-400',
+      3: 'bg-yellow-500/20 text-yellow-400',
+      2: 'bg-orange-500/20 text-orange-400',
+      1: 'bg-red-500/20 text-red-400',
     };
-    return colors[grade] || 'bg-slate-500';
+    return colors[grade] || 'bg-surface text-text-muted';
   }
 
   openForm() {

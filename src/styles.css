@@ -1,2 +1,48 @@
 @import "tailwindcss";
 @source "../app/**/*.ts";
+
+@theme {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-danger: var(--danger);
+}
+
+:root {
+  --surface: #0f0f0f;
+  --surface-raised: #1a1a1a;
+  --surface-hover: #222222;
+  --border: #2a2a2a;
+  --accent: #e8a87c;
+  --accent-hover: #d4956b;
+  --text: #e8e0d8;
+  --text-muted: #8a8078;
+  --danger: #c45c5c;
+}
+
+:root.light {
+  --surface: #f5f0eb;
+  --surface-raised: #ffffff;
+  --surface-hover: #ebe5de;
+  --border: #d8d0c8;
+  --accent: #c4845c;
+  --accent-hover: #b0734d;
+  --text: #1a1410;
+  --text-muted: #78706a;
+  --danger: #b84040;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: background 0.3s, color 0.3s;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
