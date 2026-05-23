@@ -10,11 +10,12 @@ export class SupabaseService {
   );
 
   currentUser = signal<User | null>(null);
+  sessionReady: Promise<void>;
 
   constructor() {
-    this.supabase.auth.getSession().then(({ data }) => {
-      this.currentUser.set(data.session?.user ?? null);
-    });
+this.sessionReady = this.supabase.auth.getSession().then(({ data }) => {
+  this.currentUser.set(data.session?.user ?? null);
+});
 
     this.supabase.auth.onAuthStateChange((_, session) => {
       this.currentUser.set(session?.user ?? null);

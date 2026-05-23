@@ -57,11 +57,14 @@ const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
             <label class="text-sm text-text-muted">Color</label>
             <input type="color" [(ngModel)]="form.color" class="w-10 h-8 cursor-pointer bg-transparent border-0" />
           </div>
+          @if (formError()) {
+            <p class="text-danger text-sm" style="animation: fadeUp 0.3s ease both">{{ formError() }}</p>
+          }
           <div class="flex justify-end gap-2 mt-2">
             @if (editing()) {
               <button (click)="deleteEntry()"
                 class="px-4 py-2 bg-danger text-white rounded-lg text-sm hover:opacity-80 active:scale-[0.97] transition-all">
-                Delete
+                {{ confirmDelete() ? 'Are you sure?' : 'Delete' }}
               </button>
             }
             <button (click)="closeForm()"
@@ -77,55 +80,62 @@ const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
       </div>
     }
 
-    <div class="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0" style="animation: fadeUp 0.5s ease 0.1s both">
-      <div class="flex border border-border rounded-xl overflow-hidden bg-surface-raised min-w-[600px]">
-        <div class="w-12 md:w-16 shrink-0">
-          <div class="h-10 border-b border-border"></div>
-          @for (hour of hours; track hour) {
-            <div class="h-[60px] flex items-start justify-center text-[10px] md:text-xs text-text-muted pt-0.5 border-b border-border/50">
-              {{ hour }}:00
+    @if (service.loading()) {
+    <div class="flex items-center justify-center py-20 text-text-muted text-sm" style="animation: fadeIn 0.3s ease both">
+      Loading timetable...
+    </div>
+    } @else {
+      <div class="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0" style="animation: fadeUp 0.5s ease 0.1s both">
+        <div class="flex border border-border rounded-xl overflow-hidden bg-surface-raised min-w-[600px]">
+          <div class="w-12 md:w-16 shrink-0">
+            <div class="h-10 border-b border-border"></div>
+            @for (hour of hours; track hour) {
+              <div class="h-[60px] flex items-start justify-center text-[10px] md:text-xs text-text-muted pt-0.5 border-b border-border/50">
+                {{ hour }}:00
+              </div>
+            }
+          </div>
+          @for (day of days; track day; let d = $index) {
+            <div class="flex-1 min-w-0 border-l border-border">
+              <div class="h-10 flex items-center justify-center font-semibold text-xs md:text-sm border-b border-border text-text-muted bg-surface">
+                <span class="hidden md:inline">{{ day }}</span>
+                <span class="md:hidden">{{ shortDays[d] }}</span>
+              </div>
+              <div class="relative" [style.height.px]="14 * 60">
+                @for (hour of hours; track hour) {
+                  <div class="h-[60px] border-b border-border/30"></div>
+                }
+                @for (entry of entriesForDay(d + 1); track entry.id) {
+                  <div
+                    class="absolute left-0.5 right-0.5 rounded-md px-1 md:px-1.5 py-0.5 md:py-1 text-white text-[10px] md:text-xs cursor-pointer flex flex-col gap-px overflow-hidden hover:opacity-85 active:scale-[0.98] transition-all shadow-lg"
+                    [style.top.px]="entryTop(entry)"
+                    [style.height.px]="entryHeight(entry)"
+                    [style.background]="entry.color"
+                    (click)="editEntry(entry)">
+                    <strong class="truncate">{{ entry.subject_name }}</strong>
+                    <span class="hidden md:inline">{{ entry.start_time }} - {{ entry.end_time }}</span>
+                    @if (entry.room) {
+                      <span class="truncate opacity-80 hidden md:inline">{{ entry.room }}</span>
+                    }
+                  </div>
+                }
+              </div>
             </div>
           }
         </div>
-        @for (day of days; track day; let d = $index) {
-          <div class="flex-1 min-w-0 border-l border-border">
-            <div class="h-10 flex items-center justify-center font-semibold text-xs md:text-sm border-b border-border text-text-muted bg-surface">
-              <span class="hidden md:inline">{{ day }}</span>
-              <span class="md:hidden">{{ shortDays[d] }}</span>
-            </div>
-            <div class="relative" [style.height.px]="14 * 60">
-              @for (hour of hours; track hour) {
-                <div class="h-[60px] border-b border-border/30"></div>
-              }
-              @for (entry of entriesForDay(d + 1); track entry.id) {
-                <div
-                  class="absolute left-0.5 right-0.5 rounded-md px-1 md:px-1.5 py-0.5 md:py-1 text-white text-[10px] md:text-xs cursor-pointer flex flex-col gap-px overflow-hidden hover:opacity-85 active:scale-[0.98] transition-all shadow-lg"
-                  [style.top.px]="entryTop(entry)"
-                  [style.height.px]="entryHeight(entry)"
-                  [style.background]="entry.color"
-                  (click)="editEntry(entry)">
-                  <strong class="truncate">{{ entry.subject_name }}</strong>
-                  <span class="hidden md:inline">{{ entry.start_time }} - {{ entry.end_time }}</span>
-                  @if (entry.room) {
-                    <span class="truncate opacity-80 hidden md:inline">{{ entry.room }}</span>
-                  }
-                </div>
-              }
-            </div>
-          </div>
-        }
       </div>
-    </div>
+    }
   `,
 })
 export default class Timetable implements OnInit {
-  private service = inject(TimetableService);
-
+  service = inject(TimetableService);
+  confirmDelete = signal(false);
   days = DAYS;
   shortDays = SHORT_DAYS;
   hours = HOURS;
   showForm = signal(false);
   editing = signal<string | null>(null);
+  formError = signal('');
 
   form: TimetableEntry = this.emptyForm();
 
@@ -149,12 +159,16 @@ export default class Timetable implements OnInit {
   }
 
   openForm() {
+    this.confirmDelete.set(false);
+    this.formError.set('');
     this.form = this.emptyForm();
     this.editing.set(null);
     this.showForm.set(true);
   }
 
   editEntry(entry: TimetableEntry) {
+    this.confirmDelete.set(false);
+    this.formError.set('');
     this.form = { ...entry };
     this.editing.set(entry.id!);
     this.showForm.set(true);
@@ -166,22 +180,48 @@ export default class Timetable implements OnInit {
 
   async saveEntry() {
     const id = this.editing();
+    let error;
+    this.form.day_of_week = Number(this.form.day_of_week);
+    if (!this.form.subject_name.trim()) {
+      this.formError.set('Subject name is required.');
+      return;
+    }
+    if (this.form.start_time >= this.form.end_time) {
+      this.formError.set('End time must be after start time.');
+      return;
+    }
+    if (this.form.start_time < '07:00' || this.form.end_time > '21:00') {
+      this.formError.set('Classes must be between 7:00 and 21:00.');
+      return;
+    }
     if (id) {
       const { id: _, user_id, ...rest } = this.form;
-      await this.service.update(id, rest);
+      error = await this.service.update(id, rest);
     } else {
-      await this.service.add(this.form);
+      error = await this.service.add(this.form);
+    }
+    if (error) {
+      this.formError.set('Failed to save. Check your connection.');
+      return;
     }
     this.closeForm();
   }
 
-  async deleteEntry() {
-    const id = this.editing();
-    if (id) {
-      await this.service.remove(id);
-      this.closeForm();
-    }
+async deleteEntry() {
+  if (!this.confirmDelete()) {
+    this.confirmDelete.set(true);
+    return;
   }
+  const id = this.editing();
+  if (id) {
+    const error = await this.service.remove(id);
+    if (error) {
+      this.formError.set('Failed to delete. Try again.');
+      return;
+    }
+    this.closeForm();
+  }
+}
 
   async onFileImport(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];

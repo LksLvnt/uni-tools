@@ -18,14 +18,21 @@ export interface TimetableEntry {
 export class TimetableService {
   private supabase = inject(SupabaseService);
   entries = signal<TimetableEntry[]>([]);
+    loading = signal(false);
 
-  async load() {
-    const { data, error } = await this.supabase.client
-      .from('timetable_entries')
-      .select('*')
-      .order('start_time');
-    if (!error && data) this.entries.set(data);
+async load() {
+  this.loading.set(true);
+  const { data, error } = await this.supabase.client
+    .from('timetable_entries')
+    .select('*')
+    .order('start_time');
+  if (!error && data) {
+    this.entries.set(data);
+  } else if (error) {
+    console.error('Failed to load timetable:', error.message);
   }
+  this.loading.set(false);
+}
 
   async add(entry: TimetableEntry) {
     const { error } = await this.supabase.client
