@@ -9,32 +9,33 @@ type TimerState = 'idle' | 'running' | 'paused' | 'break';
   imports: [FormsModule],
   template: `
     <div class="max-w-lg mx-auto">
-      <h2 class="font-['Playfair_Display'] text-2xl font-bold mb-6">Pomodoro</h2>
+      <h2 class="font-['Playfair_Display'] text-2xl font-bold mb-6" style="animation: fadeUp 0.4s ease both">Pomodoro</h2>
 
-      <div class="bg-surface-raised rounded-xl border border-border p-8 flex flex-col items-center gap-6">
+      <div class="bg-surface-raised rounded-xl border border-border p-6 sm:p-8 flex flex-col items-center gap-6" style="animation: fadeUp 0.5s ease 0.05s both">
         <div class="flex gap-2">
           @for (preset of presets; track preset.label) {
             <button
               (click)="setDuration(preset.minutes)"
               [disabled]="state() === 'running'"
-              [class]="'px-3 py-1.5 rounded-lg text-sm transition border ' + (duration() === preset.minutes && state() === 'idle' ? 'bg-accent text-surface border-accent' : 'bg-surface text-text-muted border-border hover:border-accent/40 disabled:opacity-50')"
+              [class]="'px-3 py-1.5 rounded-lg text-sm transition-all border active:scale-[0.95] ' + (duration() === preset.minutes && state() === 'idle' ? 'bg-accent text-surface border-accent' : 'bg-surface text-text-muted border-border hover:border-accent/40 disabled:opacity-50')"
             >{{ preset.label }}</button>
           }
         </div>
 
-        <div class="relative w-56 h-56 flex items-center justify-center">
+        <div class="relative w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center">
           <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 200 200">
-            <circle cx="100" cy="100" r="90" fill="none" stroke="#2a2a2a" stroke-width="6" />
+            <circle cx="100" cy="100" r="90" fill="none" stroke="var(--border)" stroke-width="6" />
             <circle cx="100" cy="100" r="90" fill="none"
-              [attr.stroke]="state() === 'break' ? '#4ade80' : '#e8a87c'"
+              [attr.stroke]="state() === 'break' ? '#4ade80' : 'var(--accent)'"
               stroke-width="6"
               stroke-linecap="round"
               [attr.stroke-dasharray]="circumference"
               [attr.stroke-dashoffset]="dashOffset()"
+              style="transition: stroke-dashoffset 0.5s ease"
             />
           </svg>
           <div class="text-center z-10">
-            <div class="text-5xl font-mono font-bold tracking-tight text-text">{{ displayTime() }}</div>
+            <div class="text-4xl sm:text-5xl font-mono font-bold tracking-tight text-text">{{ displayTime() }}</div>
             <div class="text-sm text-text-muted mt-1">
               {{ state() === 'break' ? 'Break' : state() === 'idle' ? 'Ready' : state() === 'paused' ? 'Paused' : 'Focus' }}
             </div>
@@ -51,25 +52,25 @@ type TimerState = 'idle' | 'running' | 'paused' | 'break';
         <div class="flex gap-3">
           @if (state() === 'idle' || state() === 'break') {
             <button (click)="start()"
-              class="px-6 py-2 bg-accent text-surface rounded-lg font-semibold hover:bg-accent-hover transition">
+              class="px-6 py-2.5 bg-accent text-surface rounded-lg font-semibold hover:bg-accent-hover active:scale-[0.96] transition-all">
               Start
             </button>
           }
           @if (state() === 'running') {
             <button (click)="pause()"
-              class="px-6 py-2 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-lg hover:bg-yellow-500/30 transition">
+              class="px-6 py-2.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-lg hover:bg-yellow-500/30 active:scale-[0.96] transition-all">
               Pause
             </button>
           }
           @if (state() === 'paused') {
             <button (click)="resume()"
-              class="px-6 py-2 bg-accent text-surface rounded-lg font-semibold hover:bg-accent-hover transition">
+              class="px-6 py-2.5 bg-accent text-surface rounded-lg font-semibold hover:bg-accent-hover active:scale-[0.96] transition-all">
               Resume
             </button>
           }
           @if (state() !== 'idle') {
             <button (click)="reset()"
-              class="px-6 py-2 bg-surface border border-border text-text-muted rounded-lg hover:text-text hover:border-accent/40 transition">
+              class="px-6 py-2.5 bg-surface border border-border text-text-muted rounded-lg hover:text-text hover:border-accent/40 active:scale-[0.96] transition-all">
               Reset
             </button>
           }
@@ -77,11 +78,11 @@ type TimerState = 'idle' | 'running' | 'paused' | 'break';
       </div>
 
       @if (todaySessions().length > 0) {
-        <div class="mt-6">
+        <div class="mt-6" style="animation: fadeUp 0.5s ease 0.15s both">
           <h3 class="font-['Playfair_Display'] text-lg font-semibold mb-3">Today's sessions</h3>
           <div class="flex flex-col gap-2">
             @for (session of todaySessions(); track session.id) {
-              <div class="bg-surface-raised rounded-lg border border-border px-4 py-3 flex items-center justify-between">
+              <div class="bg-surface-raised rounded-lg border border-border px-4 py-3 flex items-center justify-between hover:border-accent/30 transition-all">
                 <div>
                   <span class="text-sm font-medium">{{ session.label || 'Focus session' }}</span>
                   <span class="text-xs text-text-muted ml-2">{{ formatTime(session.completed_at!) }}</span>
@@ -93,12 +94,12 @@ type TimerState = 'idle' | 'running' | 'paused' | 'break';
         </div>
       }
 
-      <div class="mt-6 grid grid-cols-2 gap-4">
-        <div class="bg-surface-raised rounded-xl border border-border p-4">
+      <div class="mt-6 grid grid-cols-2 gap-3 sm:gap-4" style="animation: fadeUp 0.5s ease 0.2s both">
+        <div class="bg-surface-raised rounded-xl border border-border p-4 hover:border-accent/30 transition-all">
           <div class="text-sm text-text-muted">Today</div>
           <div class="text-2xl font-bold mt-1">{{ todayMinutes() }} min</div>
         </div>
-        <div class="bg-surface-raised rounded-xl border border-border p-4">
+        <div class="bg-surface-raised rounded-xl border border-border p-4 hover:border-accent/30 transition-all">
           <div class="text-sm text-text-muted">Sessions today</div>
           <div class="text-2xl font-bold mt-1">{{ todaySessions().length }}</div>
         </div>

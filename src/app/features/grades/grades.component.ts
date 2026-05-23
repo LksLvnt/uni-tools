@@ -6,47 +6,48 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
   selector: 'app-grades',
   imports: [FormsModule],
   template: `
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3" style="animation: fadeUp 0.4s ease both">
       <h2 class="font-['Playfair_Display'] text-2xl font-bold">Grades</h2>
       <button (click)="openForm()"
-        class="px-4 py-2 bg-accent text-surface rounded-lg text-sm font-semibold hover:bg-accent-hover transition">
+        class="px-4 py-2 bg-accent text-surface rounded-lg text-sm font-semibold hover:bg-accent-hover active:scale-[0.97] transition-all">
         + Add subject
       </button>
     </div>
 
-    <div class="grid grid-cols-3 gap-4 mb-6">
-      <div class="bg-surface-raised rounded-xl p-4 border border-border">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6" style="animation: fadeUp 0.5s ease 0.05s both">
+      <div class="bg-surface-raised rounded-xl p-4 border border-border hover:border-accent/30 transition-all">
         <div class="text-sm text-text-muted">Weighted Average</div>
         <div class="text-3xl font-bold mt-1 text-accent">{{ weightedAvg() }}</div>
       </div>
-      <div class="bg-surface-raised rounded-xl p-4 border border-border">
+      <div class="bg-surface-raised rounded-xl p-4 border border-border hover:border-accent/30 transition-all">
         <div class="text-sm text-text-muted">Total Credits</div>
         <div class="text-3xl font-bold mt-1">{{ totalCredits() }}</div>
       </div>
-      <div class="bg-surface-raised rounded-xl p-4 border border-border">
+      <div class="bg-surface-raised rounded-xl p-4 border border-border hover:border-accent/30 transition-all">
         <div class="text-sm text-text-muted">Subjects</div>
         <div class="text-3xl font-bold mt-1">{{ service.entries().length }}</div>
       </div>
     </div>
 
     @if (semesters().length > 1) {
-      <div class="flex gap-2 mb-4">
+      <div class="flex gap-2 mb-4 flex-wrap" style="animation: fadeUp 0.5s ease 0.1s both">
         <button
           (click)="selectedSemester.set(null)"
-          [class]="'px-3 py-1.5 rounded-lg text-sm transition border ' + (selectedSemester() === null ? 'bg-accent text-surface border-accent' : 'bg-surface-raised text-text-muted border-border hover:border-accent/40')">
+          [class]="'px-3 py-1.5 rounded-lg text-sm transition-all border active:scale-[0.95] ' + (selectedSemester() === null ? 'bg-accent text-surface border-accent' : 'bg-surface-raised text-text-muted border-border hover:border-accent/40')">
           All
         </button>
         @for (sem of semesters(); track sem) {
           <button
             (click)="selectedSemester.set(sem)"
-            [class]="'px-3 py-1.5 rounded-lg text-sm transition border ' + (selectedSemester() === sem ? 'bg-accent text-surface border-accent' : 'bg-surface-raised text-text-muted border-border hover:border-accent/40')">
+            [class]="'px-3 py-1.5 rounded-lg text-sm transition-all border active:scale-[0.95] ' + (selectedSemester() === sem ? 'bg-accent text-surface border-accent' : 'bg-surface-raised text-text-muted border-border hover:border-accent/40')">
             {{ sem }}
           </button>
         }
       </div>
     }
 
-    <div class="bg-surface-raised rounded-xl border border-border overflow-hidden">
+    <!-- Desktop table -->
+    <div class="hidden sm:block bg-surface-raised rounded-xl border border-border overflow-hidden" style="animation: fadeUp 0.5s ease 0.15s both">
       <table class="w-full text-sm">
         <thead class="border-b border-border">
           <tr class="text-text-muted">
@@ -60,7 +61,7 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
         <tbody>
           @for (entry of filteredEntries(); track entry.id) {
             <tr
-              class="border-b border-border/50 hover:bg-surface-hover cursor-pointer transition"
+              class="border-b border-border/50 hover:bg-surface-hover cursor-pointer transition-all"
               (click)="editEntry(entry)">
               <td class="px-4 py-3">{{ entry.subject_name }}</td>
               <td class="px-4 py-3 text-text-muted">{{ entry.semester || '—' }}</td>
@@ -81,9 +82,38 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
       </table>
     </div>
 
+    <!-- Mobile cards -->
+    <div class="sm:hidden flex flex-col gap-2" style="animation: fadeUp 0.5s ease 0.15s both">
+      @for (entry of filteredEntries(); track entry.id) {
+        <div
+          class="bg-surface-raised rounded-xl border border-border p-4 active:scale-[0.98] transition-all cursor-pointer"
+          (click)="editEntry(entry)">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-medium">{{ entry.subject_name }}</span>
+            <span [class]="'inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ' + gradeColor(entry.grade)">
+              {{ entry.grade }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between text-sm text-text-muted">
+            <span>{{ entry.credit }} credits</span>
+            <span class="font-mono">weighted: {{ entry.credit * entry.grade }}</span>
+          </div>
+          @if (entry.semester) {
+            <div class="text-xs text-text-muted mt-1">{{ entry.semester }}</div>
+          }
+        </div>
+      } @empty {
+        <div class="text-center text-text-muted py-8">No subjects added yet.</div>
+      }
+    </div>
+
     @if (showForm()) {
-      <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" (click)="closeForm()">
-        <div class="bg-surface-raised border border-border rounded-xl p-6 w-[400px] flex flex-col gap-3 shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+        style="animation: fadeIn 0.2s ease both"
+        (click)="closeForm()">
+        <div class="bg-surface-raised border border-border rounded-t-2xl sm:rounded-xl p-6 w-full sm:w-[400px] flex flex-col gap-3 shadow-2xl max-h-[85vh] overflow-y-auto"
+          style="animation: fadeUp 0.3s ease both"
+          (click)="$event.stopPropagation()">
           <h3 class="font-['Playfair_Display'] text-lg font-semibold">{{ editing() ? 'Edit' : 'Add' }} subject</h3>
           <input [(ngModel)]="form.subject_name" placeholder="Subject name"
             class="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition" />
@@ -110,7 +140,7 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
           <div class="flex justify-end gap-2 mt-2">
             @if (editing()) {
               <button (click)="deleteEntry()"
-                class="px-4 py-2 bg-danger text-white rounded-lg text-sm hover:opacity-80 transition">
+                class="px-4 py-2 bg-danger text-white rounded-lg text-sm hover:opacity-80 active:scale-[0.97] transition-all">
                 Delete
               </button>
             }
@@ -119,7 +149,7 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
               Cancel
             </button>
             <button (click)="saveEntry()"
-              class="px-4 py-2 bg-accent text-surface rounded-lg text-sm font-semibold hover:bg-accent-hover transition">
+              class="px-4 py-2 bg-accent text-surface rounded-lg text-sm font-semibold hover:bg-accent-hover active:scale-[0.97] transition-all">
               {{ editing() ? 'Save' : 'Add' }}
             </button>
           </div>
