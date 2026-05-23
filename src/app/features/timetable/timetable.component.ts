@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TimetableEntry, TimetableService } from './timetable.service';
+import { TimetableEntry, TimetableService } from '../../core/services/timetable.service';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
