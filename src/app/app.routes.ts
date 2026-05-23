@@ -4,30 +4,25 @@ import { authGuard } from './core/guards/auth.guard';
 export const routes: Routes = [
   {
     path: 'login',
-    loadComponent: () =>
-      import('./auth/login').then(m => m.Login),
+    loadComponent: () => import('./auth/login/login.component'),
   },
   {
     path: '',
-    loadComponent: () =>
-      import('./layout/shell/shell.component').then(m => m.ShellComponent),
+    loadComponent: () => import('./layout/shell/shell.component'),
     canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'timetable', pathMatch: 'full' },
       {
         path: 'timetable',
-        loadComponent: () =>
-          import('./features/timetable/timetable.component').then(m => m.TimetableComponent),
+        loadComponent: () => import('./features/timetable/timetable.component'),
       },
       {
         path: 'grades',
-        loadComponent: () =>
-          import('./features/grades/grades.component').then(m => m.GradesComponent),
+        loadComponent: () => import('./features/grades/grades.component'),
       },
       {
         path: 'pomodoro',
-        loadComponent: () =>
-          import('./features/pomodoro/pomodoro.component').then(m => m.PomodoroComponent),
+        loadComponent: () => import('./features/pomodoro/pomodoro.component'),
       },
     ],
   },

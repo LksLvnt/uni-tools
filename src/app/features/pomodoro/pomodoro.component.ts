@@ -6,4 +6,4 @@ import { Component } from '@angular/core';
   templateUrl: './pomodoro.html',
   styleUrl: './pomodoro.scss',
 })
-export class Pomodoro {}
+export default class Pomodoro {}

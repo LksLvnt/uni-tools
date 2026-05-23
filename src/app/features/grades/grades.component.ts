@@ -6,4 +6,4 @@ import { Component } from '@angular/core';
   templateUrl: './grades.html',
   styleUrl: './grades.scss',
 })
-export class Grades {}
+export default class Grades {}
