@@ -154,6 +154,13 @@ export default class Pomodoro implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.service.load();
+    setInterval(() => {
+      if (this.state() === 'running' || this.state() === 'paused') {
+        document.title = `${this.displayTime()} — UniTools`;
+      } else {
+        document.title = 'UniTools';
+      }
+    }, 1000);
   }
 
   ngOnDestroy() {
@@ -168,6 +175,9 @@ export default class Pomodoro implements OnInit, OnDestroy {
   start() {
     if (this.state() === 'break' || this.state() === 'idle') {
       this.remaining.set(this.duration() * 60);
+    }
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
     }
     this.state.set('running');
     this.tick();
@@ -208,6 +218,7 @@ export default class Pomodoro implements OnInit, OnDestroy {
 
   private async onComplete() {
     if (this.state() === 'running') {
+      this.notify();
       await this.service.log({
         duration_minutes: this.duration(),
         label: this.label || undefined,
@@ -227,5 +238,14 @@ export default class Pomodoro implements OnInit, OnDestroy {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
+  }
+
+  private async notify() {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Pomodoro', { body: 'Timer finished!' });
+    }
+    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbsGczGj6NwN3RdkYjN4G329awXB8aRoy/2NF3Uy4pboC03NCkTRMMP4eacZR+WjswMWqMscerf0siHUt3l7OoiFtPT2N7gH17c2toZG56jJqbjoByXE1FTVNZX2ducHR5fX56');
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
   }
 }
