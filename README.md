@@ -1,59 +1,155 @@
 # UniTools
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.12.
+Student productivity suite built with Angular 19, Tailwind CSS 4, and Supabase.
 
-## Development server
+## Features
 
-To start a local development server, run:
+### Timetable
+- Weekly calendar grid (Mon–Fri, 7:00–21:00)
+- Add, edit, delete classes with color coding
+- Neptun `.ics` file import
+- Responsive — shortened day names and horizontal scroll on mobile
+
+### Grade Calculator
+- Hungarian 1–5 grading scale
+- Credit-weighted average calculation
+- Semester filtering
+- Card layout on mobile, table on desktop
+
+### Pomodoro Timer
+- Circular progress ring with preset durations (25/45/60 min)
+- Pause, resume, auto-break after focus session
+- Browser notifications and audio alert on completion
+- Tab title countdown
+- Session history with daily stats logged to Supabase
+
+## Tech Stack
+
+- **Frontend:** Angular 19 (standalone components, Signals)
+- **Styling:** Tailwind CSS 4 with custom dark/light theme
+- **Backend:** Supabase (Auth, PostgreSQL, Row Level Security)
+- **Deployment:** Cloudflare Pages
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Angular CLI (`npm install -g @angular/cli`)
+- A Supabase project
+
+### Setup
+
+```bash
+git clone https://github.com/LksLvnt/uni-tools.git
+cd uni-tools
+npm install
+```
+
+Create `src/environments/environment.ts`:
+
+```ts
+export const environment = {
+  production: false,
+  supabaseUrl: 'YOUR_SUPABASE_URL',
+  supabaseAnonKey: 'YOUR_SUPABASE_ANON_KEY',
+};
+```
+
+### Database
+
+Run these SQL statements in your Supabase SQL Editor:
+
+```sql
+-- Timetable
+create table timetable_entries (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null default auth.uid(),
+  subject_name text not null,
+  neptun_code text,
+  day_of_week smallint not null check (day_of_week between 1 and 5),
+  start_time time not null,
+  end_time time not null,
+  room text,
+  instructor text,
+  color text default '#6366f1',
+  created_at timestamptz default now()
+);
+
+-- Grades
+create table grade_entries (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null default auth.uid(),
+  subject_name text not null,
+  credit smallint not null check (credit > 0),
+  grade smallint not null check (grade between 1 and 5),
+  semester text,
+  created_at timestamptz default now()
+);
+
+-- Pomodoro
+create table pomodoro_sessions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null default auth.uid(),
+  duration_minutes smallint not null,
+  label text,
+  completed_at timestamptz default now()
+);
+
+-- Enable RLS on all tables
+alter table timetable_entries enable row level security;
+alter table grade_entries enable row level security;
+alter table pomodoro_sessions enable row level security;
+
+-- RLS policies (repeat pattern for each table)
+-- Users can only read/write their own rows
+create policy "Users see own entries" on timetable_entries for select using (auth.uid() = user_id);
+create policy "Users insert own entries" on timetable_entries for insert with check (auth.uid() = user_id);
+create policy "Users update own entries" on timetable_entries for update using (auth.uid() = user_id);
+create policy "Users delete own entries" on timetable_entries for delete using (auth.uid() = user_id);
+
+create policy "Users see own grades" on grade_entries for select using (auth.uid() = user_id);
+create policy "Users insert own grades" on grade_entries for insert with check (auth.uid() = user_id);
+create policy "Users update own grades" on grade_entries for update using (auth.uid() = user_id);
+create policy "Users delete own grades" on grade_entries for delete using (auth.uid() = user_id);
+
+create policy "Users see own sessions" on pomodoro_sessions for select using (auth.uid() = user_id);
+create policy "Users insert own sessions" on pomodoro_sessions for insert with check (auth.uid() = user_id);
+create policy "Users delete own sessions" on pomodoro_sessions for delete using (auth.uid() = user_id);
+```
+
+### Run
 
 ```bash
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Open `http://localhost:4200`.
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+### Build & Deploy
 
 ```bash
 ng build
+wrangler pages deploy dist/uni-tools/browser --project-name=uni-tools
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Project Structure
 
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
+```
+src/app/
+├── core/
+│   ├── services/        # Supabase, auth, timetable, grades, pomodoro, theme
+│   └── guards/          # auth.guard, no-auth.guard
+├── features/
+│   ├── timetable/       # Weekly grid component
+│   ├── grades/          # Grade calculator component
+│   └── pomodoro/        # Timer component
+├── layout/shell/        # Sidebar + router outlet
+├── auth/login/          # Login/signup/password reset
+├── app.routes.ts
+└── app.config.ts
 ```
 
-## Running end-to-end tests
+## License
 
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+MIT
