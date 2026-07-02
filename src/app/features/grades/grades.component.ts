@@ -1,6 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { GradeEntry, GradesService } from '../../core/services/grades.service';
+import { GradeEntry, GradesService, ImportedSubject } from '../../core/services/grades.service';
 
 @Component({
   selector: 'app-grades',
@@ -8,11 +8,23 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
   template: `
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3" style="animation: fadeUp 0.4s ease both">
       <h2 class="font-['Playfair_Display'] text-2xl font-bold">Grades</h2>
-      <button (click)="openForm()"
-        class="px-4 py-2 bg-accent text-surface rounded-lg text-sm font-semibold hover:bg-accent-hover active:scale-[0.97] transition-all">
-        + Add subject
-      </button>
+      <div class="flex gap-2">
+        <button (click)="openForm()"
+          class="px-4 py-2 bg-accent text-surface rounded-lg text-sm font-semibold hover:bg-accent-hover active:scale-[0.97] transition-all">
+          + Add subject
+        </button>
+        <label class="px-4 py-2 bg-surface-raised border border-border text-text-muted rounded-lg text-sm cursor-pointer hover:text-text hover:border-accent/40 active:scale-[0.97] transition-all">
+          Import .xlsx
+          <input type="file" accept=".xlsx" (change)="onXlsxImport($event)" hidden />
+        </label>
+      </div>
     </div>
+
+    @if (importError()) {
+      <div class="bg-danger/10 border border-danger/30 text-danger text-sm rounded-lg px-4 py-3 mb-4" style="animation: fadeUp 0.3s ease both">
+        {{ importError() }}
+      </div>
+    }
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6" style="animation: fadeUp 0.5s ease 0.05s both">
       <div class="bg-surface-raised rounded-xl p-4 border border-border hover:border-accent/30 transition-all">
@@ -68,15 +80,20 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
               <tr
                 class="border-b border-border/50 hover:bg-surface-hover cursor-pointer transition-all"
                 (click)="editEntry(entry)">
-                <td class="px-4 py-3">{{ entry.subject_name }}</td>
+                <td class="px-4 py-3">
+                  {{ entry.subject_name }}
+                  @if (entry.completed && entry.grade == null) {
+                    <span class="ml-2 text-xs text-green-400">✓ completed</span>
+                  }
+                </td>
                 <td class="px-4 py-3 text-text-muted">{{ entry.semester || '—' }}</td>
                 <td class="px-4 py-3 text-center">{{ entry.credit }}</td>
                 <td class="px-4 py-3 text-center">
                   <span [class]="'inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ' + gradeColor(entry.grade)">
-                    {{ entry.grade }}
+                    {{ entry.grade ?? '–' }}
                   </span>
                 </td>
-                <td class="px-4 py-3 text-right font-mono text-text-muted">{{ entry.credit * entry.grade }}</td>
+                <td class="px-4 py-3 text-right font-mono text-text-muted">{{ entry.grade != null ? entry.credit * entry.grade : '—' }}</td>
               </tr>
             } @empty {
               <tr>
@@ -86,13 +103,7 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
           </tbody>
         </table>
       </div>
-    }
 
-    @if (service.loading()) {
-      <div class="flex items-center justify-center py-20 text-text-muted text-sm" style="animation: fadeIn 0.3s ease both">
-        Loading grades...
-      </div>
-    } @else {
       <!-- Mobile cards -->
       <div class="sm:hidden flex flex-col gap-2" style="animation: fadeUp 0.5s ease 0.15s both">
         @for (entry of filteredEntries(); track entry.id) {
@@ -102,12 +113,18 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
             <div class="flex items-center justify-between mb-2">
               <span class="font-medium">{{ entry.subject_name }}</span>
               <span [class]="'inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ' + gradeColor(entry.grade)">
-                {{ entry.grade }}
+                {{ entry.grade ?? '–' }}
               </span>
             </div>
             <div class="flex items-center justify-between text-sm text-text-muted">
               <span>{{ entry.credit }} credits</span>
-              <span class="font-mono">weighted: {{ entry.credit * entry.grade }}</span>
+              @if (entry.grade != null) {
+                <span class="font-mono">weighted: {{ entry.credit * entry.grade }}</span>
+              } @else if (entry.completed) {
+                <span class="text-green-400 text-xs">✓ completed</span>
+              } @else {
+                <span class="text-xs">no grade yet</span>
+              }
             </div>
             @if (entry.semester) {
               <div class="text-xs text-text-muted mt-1">{{ entry.semester }}</div>
@@ -118,6 +135,7 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
         }
       </div>
     }
+
     @if (showForm()) {
       <div class="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
         style="animation: fadeIn 0.2s ease both"
@@ -138,16 +156,23 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
             </div>
             <div class="flex-1">
               <label class="text-xs text-text-muted mb-1 block">Grade (1–5)</label>
-              <select [(ngModel)]="form.grade"
+              <select [(ngModel)]="formGrade"
                 class="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition">
-                <option [value]="5">5 — Excellent</option>
-                <option [value]="4">4 — Good</option>
-                <option [value]="3">3 — Satisfactory</option>
-                <option [value]="2">2 — Pass</option>
-                <option [value]="1">1 — Fail</option>
+                <option value="">No grade yet</option>
+                <option value="5">5 — Excellent</option>
+                <option value="4">4 — Good</option>
+                <option value="3">3 — Satisfactory</option>
+                <option value="2">2 — Pass</option>
+                <option value="1">1 — Fail</option>
               </select>
             </div>
           </div>
+          @if (formGrade === '') {
+            <label class="flex items-center gap-2 text-sm text-text-muted cursor-pointer hover:text-text transition">
+              <input type="checkbox" [(ngModel)]="formCompleted" class="accent-[var(--accent)]" />
+              Completed (grade pending)
+            </label>
+          }
           @if (formError()) {
             <p class="text-danger text-sm" style="animation: fadeUp 0.3s ease both">{{ formError() }}</p>
           }
@@ -170,6 +195,53 @@ import { GradeEntry, GradesService } from '../../core/services/grades.service';
         </div>
       </div>
     }
+
+    @if (importPreview() !== null) {
+      <div class="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+        style="animation: fadeIn 0.2s ease both"
+        (click)="cancelImport()">
+        <div class="bg-surface-raised border border-border rounded-t-2xl sm:rounded-xl p-6 w-full sm:w-[560px] flex flex-col gap-3 shadow-2xl max-h-[85vh]"
+          style="animation: fadeUp 0.3s ease both"
+          (click)="$event.stopPropagation()">
+          <h3 class="font-['Playfair_Display'] text-lg font-semibold">Import subjects</h3>
+          <p class="text-sm text-text-muted">
+            Found {{ importPreview()!.length }} subject(s). Grades stay empty so you can fill them in later —
+            duplicates of what you already have are unchecked.
+          </p>
+          <div class="overflow-y-auto flex flex-col gap-1 -mx-2 px-2">
+            @for (row of importPreview(); track $index) {
+              <label class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-surface-hover cursor-pointer transition">
+                <input type="checkbox" [(ngModel)]="row.include" class="w-4 h-4 shrink-0 accent-[var(--accent)]" />
+                <span class="flex-1 min-w-0">
+                  <span class="text-sm block truncate">{{ row.subject_name }}</span>
+                  <span class="text-xs text-text-muted">
+                    {{ row.credit }} cr{{ row.semester ? ' · ' + row.semester : '' }}{{ row.completed === true ? ' · completed' : row.completed === false ? ' · not completed' : '' }}{{ row.duplicate ? ' · already added' : '' }}
+                  </span>
+                </span>
+                @if (row.grade != null) {
+                  <span [class]="'inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold shrink-0 ' + gradeColor(row.grade)">{{ row.grade }}</span>
+                }
+              </label>
+            } @empty {
+              <p class="text-sm text-text-muted py-4 text-center">No subjects found in this file.</p>
+            }
+          </div>
+          @if (formError()) {
+            <p class="text-danger text-sm">{{ formError() }}</p>
+          }
+          <div class="flex justify-end gap-2 mt-1">
+            <button (click)="cancelImport()"
+              class="px-4 py-2 bg-surface border border-border text-text-muted rounded-lg text-sm hover:text-text transition">
+              Cancel
+            </button>
+            <button (click)="confirmImport()" [disabled]="importing() || selectedImportCount() === 0"
+              class="px-4 py-2 bg-accent text-surface rounded-lg text-sm font-semibold hover:bg-accent-hover active:scale-[0.97] transition-all disabled:opacity-50">
+              {{ importing() ? 'Importing...' : 'Import ' + selectedImportCount() + ' subject(s)' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `,
 })
 export default class Grades implements OnInit {
@@ -179,8 +251,13 @@ export default class Grades implements OnInit {
   editing = signal<string | null>(null);
   formError = signal('');
   selectedSemester = signal<string | null>(null);
+  importPreview = signal<ImportedSubject[] | null>(null);
+  importing = signal(false);
+  importError = signal('');
 
   form: GradeEntry = this.emptyForm();
+  formGrade = '5';
+  formCompleted = false;
 
   semesters = computed(() => {
     const all = this.service.entries().map(e => e.semester).filter(Boolean) as string[];
@@ -198,11 +275,11 @@ export default class Grades implements OnInit {
   );
 
   weightedAvg = computed(() => {
-    const entries = this.filteredEntries();
-    if (entries.length === 0) return '—';
-    const totalCredits = entries.reduce((sum, e) => sum + e.credit, 0);
+    const graded = this.filteredEntries().filter(e => e.grade != null);
+    if (graded.length === 0) return '—';
+    const totalCredits = graded.reduce((sum, e) => sum + e.credit, 0);
     if (totalCredits === 0) return '—';
-    const weighted = entries.reduce((sum, e) => sum + e.credit * e.grade, 0);
+    const weighted = graded.reduce((sum, e) => sum + e.credit * e.grade!, 0);
     return (weighted / totalCredits).toFixed(2);
   });
 
@@ -210,7 +287,7 @@ export default class Grades implements OnInit {
     this.service.load();
   }
 
-  gradeColor(grade: number): string {
+  gradeColor(grade: number | null): string {
     const colors: Record<number, string> = {
       5: 'bg-green-500/20 text-green-400',
       4: 'bg-blue-500/20 text-blue-400',
@@ -218,13 +295,15 @@ export default class Grades implements OnInit {
       2: 'bg-orange-500/20 text-orange-400',
       1: 'bg-red-500/20 text-red-400',
     };
-    return colors[grade] || 'bg-surface text-text-muted';
+    return (grade != null && colors[grade]) || 'bg-surface text-text-muted';
   }
 
   openForm() {
     this.confirmDelete.set(false);
     this.formError.set('');
     this.form = this.emptyForm();
+    this.formGrade = '5';
+    this.formCompleted = false;
     this.editing.set(null);
     this.showForm.set(true);
   }
@@ -233,6 +312,8 @@ export default class Grades implements OnInit {
     this.confirmDelete.set(false);
     this.formError.set('');
     this.form = { ...entry };
+    this.formGrade = entry.grade != null ? String(entry.grade) : '';
+    this.formCompleted = !!entry.completed;
     this.editing.set(entry.id!);
     this.showForm.set(true);
   }
@@ -253,7 +334,8 @@ export default class Grades implements OnInit {
       return;
     }
     this.formError.set('');
-    this.form.grade = Number(this.form.grade);
+    this.form.grade = this.formGrade === '' ? null : Number(this.formGrade);
+    this.form.completed = this.form.grade != null ? this.form.grade >= 2 : this.formCompleted;
     this.form.credit = Number(this.form.credit);
     if (id) {
       const { id: _, user_id, ...rest } = this.form;
@@ -268,21 +350,65 @@ export default class Grades implements OnInit {
     this.closeForm();
   }
 
-async deleteEntry() {
-  if (!this.confirmDelete()) {
-    this.confirmDelete.set(true);
-    return;
-  }
-  const id = this.editing();
-  if (id) {
-    const error = await this.service.remove(id);
-    if (error) {
-      this.formError.set('Failed to delete. Try again.');
+  async deleteEntry() {
+    if (!this.confirmDelete()) {
+      this.confirmDelete.set(true);
       return;
     }
-    this.closeForm();
+    const id = this.editing();
+    if (id) {
+      const error = await this.service.remove(id);
+      if (error) {
+        this.formError.set('Failed to delete. Try again.');
+        return;
+      }
+      this.closeForm();
+    }
   }
-}
+
+  async onXlsxImport(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.importError.set('');
+    this.formError.set('');
+    try {
+      const rows = await this.service.parseXlsx(file);
+      this.importPreview.set(rows);
+    } catch (e) {
+      this.importError.set(e instanceof Error ? e.message : 'Could not read this file.');
+    }
+  }
+
+  selectedImportCount(): number {
+    return (this.importPreview() ?? []).filter(r => r.include).length;
+  }
+
+  cancelImport() {
+    this.importPreview.set(null);
+    this.formError.set('');
+  }
+
+  async confirmImport() {
+    const selected = (this.importPreview() ?? []).filter(r => r.include);
+    if (selected.length === 0) return;
+    this.importing.set(true);
+    const entries: GradeEntry[] = selected.map(r => ({
+      subject_name: r.subject_name,
+      credit: r.credit,
+      grade: r.grade,
+      semester: r.semester ?? null,
+      completed: r.grade != null ? r.grade >= 2 : r.completed,
+    }));
+    const error = await this.service.addMany(entries);
+    this.importing.set(false);
+    if (error) {
+      this.formError.set('Import failed. If you imported subjects without grades before, make sure the database allows empty grades (see README).');
+      return;
+    }
+    this.importPreview.set(null);
+  }
 
   private emptyForm(): GradeEntry {
     return {
