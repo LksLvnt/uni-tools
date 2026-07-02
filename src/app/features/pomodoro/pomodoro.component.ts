@@ -1,15 +1,76 @@
-import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { PomodoroService } from '../../core/services/pomodoro.service';
-
-type TimerState = 'idle' | 'running' | 'paused' | 'break';
+import { PomodoroPhase, PomodoroService } from '../../core/services/pomodoro.service';
 
 @Component({
   selector: 'app-pomodoro',
   imports: [FormsModule],
   template: `
     <div class="max-w-lg mx-auto">
-      <h2 class="font-['Playfair_Display'] text-2xl font-bold mb-6" style="animation: fadeUp 0.4s ease both">Pomodoro</h2>
+      <div class="flex items-center justify-between mb-6" style="animation: fadeUp 0.4s ease both">
+        <h2 class="font-['Playfair_Display'] text-2xl font-bold">Pomodoro</h2>
+        <button (click)="showSettings.set(!showSettings())"
+          class="px-3 py-1.5 rounded-lg text-sm transition-all border active:scale-[0.95] bg-surface-raised text-text-muted border-border hover:border-accent/40 hover:text-text">
+          {{ showSettings() ? 'Close settings' : 'Settings' }}
+        </button>
+      </div>
+
+      @if (showSettings()) {
+        <div class="bg-surface-raised rounded-xl border border-border p-5 mb-6 flex flex-col gap-4" style="animation: fadeUp 0.3s ease both">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="text-xs text-text-muted mb-1 block">Focus (min)</label>
+              <input type="number" min="1" max="180" [ngModel]="service.settings().focusMinutes"
+                (ngModelChange)="updateSetting('focusMinutes', $event)"
+                class="w-full px-2 py-1.5 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition" />
+            </div>
+            <div>
+              <label class="text-xs text-text-muted mb-1 block">Short break</label>
+              <input type="number" min="1" max="60" [ngModel]="service.settings().shortBreakMinutes"
+                (ngModelChange)="updateSetting('shortBreakMinutes', $event)"
+                class="w-full px-2 py-1.5 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition" />
+            </div>
+            <div>
+              <label class="text-xs text-text-muted mb-1 block">Long break</label>
+              <input type="number" min="1" max="120" [ngModel]="service.settings().longBreakMinutes"
+                (ngModelChange)="updateSetting('longBreakMinutes', $event)"
+                class="w-full px-2 py-1.5 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition" />
+            </div>
+            <div>
+              <label class="text-xs text-text-muted mb-1 block">Long break after</label>
+              <input type="number" min="1" max="12" [ngModel]="service.settings().sessionsUntilLongBreak"
+                (ngModelChange)="updateSetting('sessionsUntilLongBreak', $event)"
+                class="w-full px-2 py-1.5 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 text-sm text-text-muted cursor-pointer hover:text-text transition">
+              <input type="checkbox" [ngModel]="service.settings().autoStartBreaks"
+                (ngModelChange)="updateSetting('autoStartBreaks', $event)" class="accent-[var(--accent)]" />
+              Auto-start breaks
+            </label>
+            <label class="flex items-center gap-2 text-sm text-text-muted cursor-pointer hover:text-text transition">
+              <input type="checkbox" [ngModel]="service.settings().autoStartFocus"
+                (ngModelChange)="updateSetting('autoStartFocus', $event)" class="accent-[var(--accent)]" />
+              Auto-start focus after breaks
+            </label>
+            <label class="flex items-center gap-2 text-sm text-text-muted cursor-pointer hover:text-text transition">
+              <input type="checkbox" [ngModel]="service.settings().soundEnabled"
+                (ngModelChange)="updateSetting('soundEnabled', $event)" class="accent-[var(--accent)]" />
+              Sound alert
+            </label>
+            <label class="flex items-center gap-2 text-sm text-text-muted cursor-pointer hover:text-text transition">
+              <input type="checkbox" [ngModel]="service.settings().notificationsEnabled"
+                (ngModelChange)="updateSetting('notificationsEnabled', $event)" class="accent-[var(--accent)]" />
+              Notifications
+            </label>
+          </div>
+          @if (notificationsBlocked()) {
+            <p class="text-xs text-danger">Notifications are blocked in your browser — allow them in site settings to get alerts.</p>
+          }
+        </div>
+      }
+
       @if (service.loading()) {
         <div class="flex items-center justify-center py-20 text-text-muted text-sm" style="animation: fadeIn 0.3s ease both">
           Loading pomodoro...
@@ -17,12 +78,12 @@ type TimerState = 'idle' | 'running' | 'paused' | 'break';
       } @else {
         <div class="bg-surface-raised rounded-xl border border-border p-6 sm:p-8 flex flex-col items-center gap-6" style="animation: fadeUp 0.5s ease 0.05s both">
           <div class="flex gap-2">
-            @for (preset of presets; track preset.label) {
+            @for (tab of phaseTabs; track tab.phase) {
               <button
-                (click)="setDuration(preset.minutes)"
-                [disabled]="state() === 'running'"
-                [class]="'px-3 py-1.5 rounded-lg text-sm transition-all border active:scale-[0.95] ' + (duration() === preset.minutes && state() === 'idle' ? 'bg-accent text-surface border-accent' : 'bg-surface text-text-muted border-border hover:border-accent/40 disabled:opacity-50')"
-              >{{ preset.label }}</button>
+                (click)="service.setPhase(tab.phase)"
+                [disabled]="service.state() === 'running'"
+                [class]="'px-3 py-1.5 rounded-lg text-sm transition-all border active:scale-[0.95] ' + (service.phase() === tab.phase ? 'bg-accent text-surface border-accent' : 'bg-surface text-text-muted border-border hover:border-accent/40 disabled:opacity-50')"
+              >{{ tab.label }}</button>
             }
           </div>
 
@@ -30,7 +91,7 @@ type TimerState = 'idle' | 'running' | 'paused' | 'break';
             <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 200 200">
               <circle cx="100" cy="100" r="90" fill="none" stroke="var(--border)" stroke-width="6" />
               <circle cx="100" cy="100" r="90" fill="none"
-                [attr.stroke]="state() === 'break' ? '#4ade80' : 'var(--accent)'"
+                [attr.stroke]="service.phase() === 'focus' ? 'var(--accent)' : '#4ade80'"
                 stroke-width="6"
                 stroke-linecap="round"
                 [attr.stroke-dasharray]="circumference"
@@ -39,45 +100,54 @@ type TimerState = 'idle' | 'running' | 'paused' | 'break';
               />
             </svg>
             <div class="text-center z-10">
-              <div class="text-4xl sm:text-5xl font-mono font-bold tracking-tight text-text">{{ displayTime() }}</div>
-              <div class="text-sm text-text-muted mt-1">
-                {{ state() === 'break' ? 'Break' : state() === 'idle' ? 'Ready' : state() === 'paused' ? 'Paused' : 'Focus' }}
-              </div>
+              <div class="text-4xl sm:text-5xl font-mono font-bold tracking-tight text-text">{{ service.displayTime() }}</div>
+              <div class="text-sm text-text-muted mt-1">{{ statusLabel() }}</div>
             </div>
           </div>
 
+          <div class="flex items-center gap-1.5" title="Focus sessions until long break">
+            @for (dot of cycleDots(); track $index) {
+              <span [class]="'w-2.5 h-2.5 rounded-full transition-all ' + (dot ? 'bg-accent' : 'bg-border')"></span>
+            }
+          </div>
+
           <input
-            [(ngModel)]="label"
+            [ngModel]="service.label()"
+            (ngModelChange)="service.label.set($event)"
             placeholder="What are you working on?"
-            [disabled]="state() === 'running'"
+            [disabled]="service.state() === 'running'"
             class="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text text-center placeholder:text-text-muted focus:outline-none focus:border-accent transition"
           />
 
           <div class="flex gap-3">
-            @if (state() === 'idle' || state() === 'break') {
-              <button (click)="start()"
+            @if (service.state() === 'idle') {
+              <button (click)="service.start()"
                 class="px-6 py-2.5 bg-accent text-surface rounded-lg font-semibold hover:bg-accent-hover active:scale-[0.96] transition-all">
                 Start
               </button>
             }
-            @if (state() === 'running') {
-              <button (click)="pause()"
+            @if (service.state() === 'running') {
+              <button (click)="service.pause()"
                 class="px-6 py-2.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-lg hover:bg-yellow-500/30 active:scale-[0.96] transition-all">
                 Pause
               </button>
             }
-            @if (state() === 'paused') {
-              <button (click)="resume()"
+            @if (service.state() === 'paused') {
+              <button (click)="service.start()"
                 class="px-6 py-2.5 bg-accent text-surface rounded-lg font-semibold hover:bg-accent-hover active:scale-[0.96] transition-all">
                 Resume
               </button>
             }
-            @if (state() !== 'idle') {
-              <button (click)="reset()"
+            @if (service.state() !== 'idle') {
+              <button (click)="service.reset()"
                 class="px-6 py-2.5 bg-surface border border-border text-text-muted rounded-lg hover:text-text hover:border-accent/40 active:scale-[0.96] transition-all">
                 Reset
               </button>
             }
+            <button (click)="service.skip()"
+              class="px-6 py-2.5 bg-surface border border-border text-text-muted rounded-lg hover:text-text hover:border-accent/40 active:scale-[0.96] transition-all">
+              Skip
+            </button>
           </div>
         </div>
 
@@ -112,33 +182,37 @@ type TimerState = 'idle' | 'running' | 'paused' | 'break';
       </div>
   `,
 })
-export default class Pomodoro implements OnInit, OnDestroy {
+export default class Pomodoro implements OnInit {
   service = inject(PomodoroService);
-  private intervalId: ReturnType<typeof setInterval> | null = null;
-
-  state = signal<TimerState>('idle');
-  duration = signal(25);
-  remaining = signal(25 * 60);
-  label = '';
+  showSettings = signal(false);
 
   readonly circumference = 2 * Math.PI * 90;
-  readonly presets = [
-    { label: '25 min', minutes: 25 },
-    { label: '45 min', minutes: 45 },
-    { label: '60 min', minutes: 60 },
+  readonly phaseTabs: { label: string; phase: PomodoroPhase }[] = [
+    { label: 'Focus', phase: 'focus' },
+    { label: 'Short break', phase: 'short_break' },
+    { label: 'Long break', phase: 'long_break' },
   ];
 
   dashOffset = computed(() => {
-    const total = this.duration() * 60;
-    const progress = this.remaining() / total;
+    const total = this.service.phaseDuration();
+    if (total <= 0) return 0;
+    const progress = Math.min(Math.max(this.service.remaining() / total, 0), 1);
     return this.circumference * progress;
   });
 
-  displayTime = computed(() => {
-    const total = this.remaining();
-    const m = Math.floor(total / 60);
-    const s = total % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  statusLabel = computed(() => {
+    const state = this.service.state();
+    if (state === 'paused') return 'Paused';
+    const phase = this.service.phase();
+    if (phase === 'short_break') return 'Short break';
+    if (phase === 'long_break') return 'Long break';
+    return state === 'running' ? 'Focus' : 'Ready';
+  });
+
+  cycleDots = computed(() => {
+    const total = this.service.settings().sessionsUntilLongBreak;
+    const done = Math.min(this.service.cycleCount(), total);
+    return Array.from({ length: total }, (_, i) => i < done);
   });
 
   todaySessions = computed(() => {
@@ -154,98 +228,20 @@ export default class Pomodoro implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.service.load();
-    setInterval(() => {
-      if (this.state() === 'running' || this.state() === 'paused') {
-        document.title = `${this.displayTime()} — UniTools`;
-      } else {
-        document.title = 'UniTools';
-      }
-    }, 1000);
   }
 
-  ngOnDestroy() {
-    this.clearInterval();
+  notificationsBlocked(): boolean {
+    return this.service.settings().notificationsEnabled
+      && 'Notification' in window
+      && Notification.permission === 'denied';
   }
 
-  setDuration(minutes: number) {
-    this.duration.set(minutes);
-    this.remaining.set(minutes * 60);
-  }
-
-  start() {
-    if (this.state() === 'break' || this.state() === 'idle') {
-      this.remaining.set(this.duration() * 60);
-    }
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-    this.state.set('running');
-    this.tick();
-  }
-
-  pause() {
-    this.clearInterval();
-    this.state.set('paused');
-  }
-
-  resume() {
-    this.state.set('running');
-    this.tick();
-  }
-
-  reset() {
-    this.clearInterval();
-    this.state.set('idle');
-    this.remaining.set(this.duration() * 60);
+  updateSetting(key: string, value: number | boolean) {
+    if (typeof value === 'number' && (!Number.isFinite(value) || value < 1)) return;
+    this.service.updateSettings({ [key]: value });
   }
 
   formatTime(iso: string): string {
     return new Date(iso).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
-  }
-
-  private tick() {
-    this.clearInterval();
-    this.intervalId = setInterval(() => {
-      const next = this.remaining() - 1;
-      if (next <= 0) {
-        this.clearInterval();
-        this.onComplete();
-      } else {
-        this.remaining.set(next);
-      }
-    }, 1000);
-  }
-
-  private async onComplete() {
-    if (this.state() === 'running') {
-      this.notify();
-      await this.service.log({
-        duration_minutes: this.duration(),
-        label: this.label || undefined,
-      });
-      this.state.set('break');
-      this.duration.set(5);
-      this.remaining.set(5 * 60);
-    } else {
-      this.state.set('idle');
-      this.duration.set(25);
-      this.remaining.set(25 * 60);
-    }
-  }
-
-  private clearInterval() {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
-    }
-  }
-
-  private async notify() {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Pomodoro', { body: 'Timer finished!' });
-    }
-    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbsGczGj6NwN3RdkYjN4G329awXB8aRoy/2NF3Uy4pboC03NCkTRMMP4eacZR+WjswMWqMscerf0siHUt3l7OoiFtPT2N7gH17c2toZG56jJqbjoByXE1FTVNZX2ducHR5fX56');
-    audio.volume = 0.5;
-    audio.play().catch(() => {});
   }
 }
