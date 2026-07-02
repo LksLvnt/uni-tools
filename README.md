@@ -30,9 +30,11 @@ Student productivity suite built with Angular 19, Tailwind CSS 4, and Supabase.
 - Session history with daily stats logged to Supabase
 
 ### Todos
-- Multiple lists (e.g. per subject, groceries, "general stuff")
+- Two list types: checklists (tickable tasks) and notes (free-form,
+  multiline text — for general stuff that isn't a task)
 - Quick add, check off, delete, clear completed
-- Inline list rename, done counters
+- Click any task, note or list title to edit it inline
+- Done counters and inline error feedback
 
 ### PWA
 - Installable on phone/desktop ("Add to Home Screen") with app icon and
@@ -108,13 +110,18 @@ create table grade_entries (
 -- alter table grade_entries alter column grade drop not null;
 -- alter table grade_entries add column if not exists completed boolean;
 
--- Todos
+-- Todos (kind: 'checklist' = tickable tasks, 'notes' = free-form notes)
 create table todo_lists (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade not null default auth.uid(),
   title text not null,
+  kind text not null default 'checklist' check (kind in ('checklist', 'notes')),
   created_at timestamptz default now()
 );
+
+-- If you created todo_lists before the notes feature, migrate it:
+-- alter table todo_lists add column if not exists kind text not null default 'checklist'
+--   check (kind in ('checklist', 'notes'));
 
 create table todo_items (
   id uuid default gen_random_uuid() primary key,

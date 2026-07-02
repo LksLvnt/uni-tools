@@ -1,10 +1,13 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 
+export type TodoListKind = 'checklist' | 'notes';
+
 export interface TodoList {
   id?: string;
   user_id?: string;
   title: string;
+  kind?: TodoListKind;
   created_at?: string;
 }
 
@@ -37,10 +40,10 @@ export class TodosService {
     this.loading.set(false);
   }
 
-  async addList(title: string) {
+  async addList(title: string, kind: TodoListKind = 'checklist') {
     const { error } = await this.supabase.client
       .from('todo_lists')
-      .insert({ title });
+      .insert({ title, kind });
     if (!error) await this.load();
     return error;
   }
@@ -83,6 +86,15 @@ export class TodosService {
       this.items.update(items => items.map(i => i.id === item.id ? { ...i, done: item.done } : i));
       console.error('Failed to update item:', error.message);
     }
+    return error;
+  }
+
+  async updateItem(id: string, content: string) {
+    const { error } = await this.supabase.client
+      .from('todo_items')
+      .update({ content })
+      .eq('id', id);
+    if (!error) await this.load();
     return error;
   }
 
