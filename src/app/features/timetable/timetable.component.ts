@@ -21,6 +21,11 @@ const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
           Import .ics
           <input type="file" accept=".ics" (change)="onFileImport($event)" hidden />
         </label>
+        <button (click)="exportIcs()"
+          [disabled]="service.entries().length === 0"
+          class="px-4 py-2 bg-surface-raised border border-border text-text-muted rounded-lg text-sm hover:text-text hover:border-accent/40 active:scale-[0.97] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+          Export .ics
+        </button>
       </div>
     </div>
 
@@ -222,6 +227,17 @@ async deleteEntry() {
     this.closeForm();
   }
 }
+
+  exportIcs() {
+    const ics = this.service.buildIcs(this.service.entries());
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'timetable.ics';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   async onFileImport(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];

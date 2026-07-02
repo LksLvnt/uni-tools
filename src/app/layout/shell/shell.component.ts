@@ -23,6 +23,10 @@ import { ThemeService } from '../../core/services/theme.service';
           class="px-3 py-2.5 rounded-lg text-sm text-text-muted hover:text-text hover:bg-surface-hover transition">
           Pomodoro
         </a>
+        <a routerLink="todos" routerLinkActive="!bg-surface-hover !text-accent"
+          class="px-3 py-2.5 rounded-lg text-sm text-text-muted hover:text-text hover:bg-surface-hover transition">
+          Todos
+        </a>
         <div class="mt-auto flex flex-col gap-1">
           <button (click)="theme.toggle()"
             class="px-3 py-2.5 rounded-lg text-sm text-text-muted hover:text-text hover:bg-surface-hover transition text-left">
@@ -73,6 +77,13 @@ import { ThemeService } from '../../core/services/theme.service';
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
           </svg>
           <span>Pomodoro</span>
+        </a>
+        <a routerLink="todos" routerLinkActive="!text-accent"
+          class="flex-1 flex flex-col items-center py-3 text-text-muted text-xs gap-1 active:scale-95 transition-transform">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+          </svg>
+          <span>Todos</span>
         </a>
       </nav>
     </div>

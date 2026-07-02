@@ -26,6 +26,10 @@ export const routes: Routes = [
         path: 'pomodoro',
         loadComponent: () => import('./features/pomodoro/pomodoro.component'),
       },
+      {
+        path: 'todos',
+        loadComponent: () => import('./features/todos/todos.component'),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

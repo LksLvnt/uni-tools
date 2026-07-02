@@ -23,6 +23,8 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
+            "allowedCommonJsDependencies": ["exceljs"],
+            "serviceWorker": "ngsw-config.json",
             "assets": [
               {
                 "glob": "**/*",
